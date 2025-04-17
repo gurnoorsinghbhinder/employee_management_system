@@ -1,5 +1,4 @@
-// Package controller handles HTTP request processing for the employee management system.
-// It contains handlers for CRUD operations on employee resources.
+// Package controller handles HTTP requests for the employee management system.
 package controller
 
 import (
@@ -10,27 +9,24 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // CreateEmployee handles POST requests to create a new employee.
-// It validates the email format and checks if the email is already in use
-// before storing the employee data in the database.
 func CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var employee models.Employee
 	json.NewDecoder(r.Body).Decode(&employee)
 	
-	// Validate email format
-	if !utils.IsValidEmail(employee.Email) {
+	if !utils.IsValidEmail(*employee.Email) {
 		http.Error(w, "Invalid email format", http.StatusBadRequest)
 		return
 	}
 	
-	// Check if email is already taken
-	taken, err := repository.IsEmailTaken(employee.Email)
+	taken, err := repository.IsEmailTaken(*employee.Email)
 	if err != nil {
 		http.Error(w, "Error while checking Email", http.StatusInternalServerError)
 		return
@@ -40,7 +36,6 @@ func CreateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Persist employee to database
 	err = repository.CreateEmployee(employee)
 	if err != nil {
 		log.Print("error creating employee")
@@ -50,7 +45,7 @@ func CreateEmployee(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(employee)
 }
 
-// GetAllEmployee handles GET requests to retrieve all employees from the database.
+// GetAllEmployee retrieves all employees
 func GetAllEmployee(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	employee, err := repository.GetAllEmployees()
@@ -62,25 +57,33 @@ func GetAllEmployee(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(employee)
 }
 
-// UpdateEmployee handles PUT requests to update an existing employee.
-// It validates the request data and checks for email conflicts before updating.
+// UpdateEmployee updates an existing employee by ID
 func UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// Extract employee ID from URL
 	idParam := mux.Vars(r)["id"]
 	id, _ := primitive.ObjectIDFromHex(idParam)
 
 	var employee models.Employee
-	json.NewDecoder(r.Body).Decode(&employee)
+	if err:=json.NewDecoder(r.Body).Decode(&employee);err!=nil{
+		http.Error(w,"invalid inputs",http.StatusBadRequest)
+	}
 
-	// Validate email format
-	if !utils.IsValidEmail(employee.Email) {
+	if employee.Name==nil || strings.TrimSpace(*employee.Name)==""{
+        http.Error(w,"name is required",http.StatusBadRequest)
+	}
+
+	if employee.Email==nil || strings.TrimSpace(*employee.Email)==""{
+		http.Error(w,"email is required",http.StatusBadRequest)
+	}
+
+
+
+	if !utils.IsValidEmail(*employee.Email) {
 		http.Error(w, "Invalid email format", http.StatusBadRequest)
 		return
 	}
 
-	// Check if email is already taken by another employee
-	taken, err := repository.IsEmailTaken(employee.Email)
+	taken, err := repository.IsEmailTakenByOther(id,*employee.Email)
 	if err != nil {
 		http.Error(w, "Error while checking Email", http.StatusInternalServerError)
 		return
@@ -90,7 +93,6 @@ func UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update employee in database
 	err = repository.UpdateEmployees(id, employee)
 	if err != nil {
 		log.Print("error updating employees")
@@ -100,9 +102,8 @@ func UpdateEmployee(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(employee)
 }
 
-// DeleteEmployee handles DELETE requests to remove a specific employee by ID.
+// DeleteEmployee removes an employee by ID
 func DeleteEmployee(w http.ResponseWriter, r *http.Request) {
-	// Extract employee ID from URL
 	idParam := mux.Vars(r)["id"]
 	id, _ := primitive.ObjectIDFromHex(idParam)
 
@@ -115,7 +116,7 @@ func DeleteEmployee(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// DeleteAllEmployees handles DELETE requests to remove all employees from the database.
+// DeleteAllEmployees removes all employees from the database
 func DeleteAllEmployees(w http.ResponseWriter, r *http.Request) {
 	err := repository.DeleteAllEmployees()
 	if err != nil {
@@ -126,9 +127,8 @@ func DeleteAllEmployees(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// GetEmployeeByID handles GET requests to retrieve a specific employee by their ID.
+// GetEmployeeByID retrieves a specific employee by ID
 func GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
-	// Extract employee ID from URL
 	idParam := mux.Vars(r)["id"]
 	id, err := primitive.ObjectIDFromHex(idParam)
 	if err != nil {
@@ -145,13 +145,11 @@ func GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(employee)
 }
 
-// GetPaginatedEmployees handles GET requests with pagination parameters.
-// It accepts page number and limit as query parameters.
+// GetPaginatedEmployees retrieves employees with pagination
 func GetPaginatedEmployees(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	query := r.URL.Query()
 
-	// Extract and validate pagination parameters
 	pageStr := query.Get("page")
 	limitStr := query.Get("limit")
 
@@ -167,7 +165,6 @@ func GetPaginatedEmployees(w http.ResponseWriter, r *http.Request) {
 		limit = 10
 	}
 
-	// Fetch paginated results
 	employees, err := repository.GetPaginatedEmployees(page, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -4,29 +4,28 @@ import (
 	"employee/db"
 	"employee/models"
 	"employee/utils"
+	"errors"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// CreateEmployee adds a new employee to the database
-// Parameters:
-//   - emp: The employee model to be inserted
-// Returns:
-//   - error: Any error encountered during insertion
+// Creates a new employee in the database
 func CreateEmployee(emp models.Employee) error{
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
+
+	if emp.Name==nil || emp.Email==nil{
+		return errors.New("name and email are required")
+	}
 
 	_,err:=db.EmployeeCollection.InsertOne(ctx,emp)
 	return err
 }
 
-// GetAllEmployees retrieves all employees from the database
-// Returns:
-//   - []models.Employee: Slice containing all employees
-//   - error: Any error encountered during retrieval
+// Retrieves all employees
 func GetAllEmployees()([]models.Employee,error){
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
@@ -46,28 +45,48 @@ func GetAllEmployees()([]models.Employee,error){
 		allEmployees=append(allEmployees, employee)
 	}
 	return allEmployees,nil
-	
 }
 
-// UpdateEmployees updates an employee's information in the database
-// Parameters:
-//   - id: ObjectID of the employee to update
-//   - emp: Updated employee data
-// Returns:
-//   - error: Any error encountered during update
+// Updates an employee by ID
 func UpdateEmployees(id primitive.ObjectID,emp models.Employee) error {
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
+
+	update:=bson.M{}
+	
+	if emp.Name!=nil && strings.TrimSpace(*emp.Name)!=""{
+		update["name"]=*emp.Name
+	}
+	
+	if emp.Email!=nil && strings.TrimSpace(*emp.Email)!=""{
+		update["email"]=*emp.Email
+	}
+
+	if emp.Position!=nil && strings.TrimSpace(*emp.Position)!=""{
+		update["position"]=*emp.Position
+	}
+
+	if emp.Salary!=nil {
+		update["salary"]=*emp.Salary
+	}
+
+	if emp.Joining!=nil {
+		update["joining"]= *emp.Joining
+	}
+
+	if emp.PreviousOrgs!=nil {
+		update["previousOrgs"]=*emp.Joining
+	}
+
+	if len(update)==0{
+		return errors.New("nothing to update")
+	}
 
 	_,err:=db.EmployeeCollection.UpdateOne(ctx,bson.M{"_id":id},bson.M{"$set":emp})
 	return err
 }
 
-// DeleteEmployee removes a specific employee from the database
-// Parameters:
-//   - id: ObjectID of the employee to delete
-// Returns:
-//   - error: Any error encountered during deletion
+// Deletes an employee by ID
 func DeleteEmployee(id primitive.ObjectID) error {
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
@@ -76,9 +95,7 @@ func DeleteEmployee(id primitive.ObjectID) error {
 	return err
 }
 
-// DeleteAllEmployees removes all employees from the database
-// Returns:
-//   - error: Any error encountered during deletion
+// Deletes all employees
 func DeleteAllEmployees()error{
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
@@ -87,12 +104,7 @@ func DeleteAllEmployees()error{
 	return err
 }
 
-// GetEmployeeByID retrieves a specific employee by their ID
-// Parameters:
-//   - id: ObjectID of the employee to retrieve
-// Returns:
-//   - models.Employee: The found employee
-//   - error: Any error encountered during retrieval
+// Gets employee by ID
 func GetEmployeeByID(id primitive.ObjectID)(models.Employee,error){
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
@@ -102,13 +114,7 @@ func GetEmployeeByID(id primitive.ObjectID)(models.Employee,error){
 	return employee,err
 }
 
-// GetPaginatedEmployees retrieves employees with pagination
-// Parameters:
-//   - page: Current page number (1-based indexing)
-//   - limit: Number of records per page
-// Returns:
-//   - []models.Employee: Slice of employees for the requested page
-//   - error: Any error encountered during retrieval
+// Retrieves employees with pagination
 func GetPaginatedEmployees(page,limit int)([]models.Employee,error){
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
@@ -128,17 +134,28 @@ func GetPaginatedEmployees(page,limit int)([]models.Employee,error){
 	return employees,nil
 }
 
-// IsEmailTaken checks if an email is already registered in the database
-// Parameters:
-//   - email: Email address to check
-// Returns:
-//   - bool: true if email exists, false otherwise
-//   - error: Any error encountered during the check
+// Checks if email already exists
 func IsEmailTaken(email string)(bool,error){
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
 
 	count,err:=db.EmployeeCollection.CountDocuments(ctx,bson.M{"email":email})
+	if err!=nil{
+		return false,err
+	}
+	return count>0,nil
+}
+
+func IsEmailTakenByOther(id primitive.ObjectID,email string)(bool,error){
+	ctx,cancel:=utils.GetContext()
+	defer cancel()
+
+	filter:=bson.M{
+		"email":email,
+		"_id":bson.M{"$ne":id},
+	}
+
+	count,err:=db.EmployeeCollection.CountDocuments(ctx,filter)
 	if err!=nil{
 		return false,err
 	}
