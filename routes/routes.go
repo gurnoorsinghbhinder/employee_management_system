@@ -14,5 +14,6 @@ func RegisterRoutes() *mux.Router{
 	r.HandleFunc("/employees/{id}",controller.DeleteEmployee).Methods("DELETE")
 	r.HandleFunc("/employees/{id}",controller.UpdateEmployee).Methods("PUT")
 	r.HandleFunc("/employees/{id}",controller.GetEmployeeByID).Methods("GET")
+	r.HandleFunc("/employees/paginated",controller.GetPaginatedEmployees).Methods("GET")
 	return r
 }

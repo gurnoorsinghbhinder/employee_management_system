@@ -13,6 +13,7 @@ type PreviousOrgs struct{
 type Employee struct{
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name string `bson:"name" json:"name"`
+	Email string `bson:"email" json:"email"`
 	Position string `bson:"position" json:"position"`
 	Salary float64 `bson:"salary" json:"salary"`
 	Joining time.Time `bson:"joining" json:"joining"`
