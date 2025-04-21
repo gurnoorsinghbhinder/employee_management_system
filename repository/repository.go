@@ -5,6 +5,7 @@ import (
 	"employee/models"
 	"employee/utils"
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -78,11 +79,13 @@ func UpdateEmployees(id primitive.ObjectID,emp models.Employee) error {
 		update["previousOrgs"]=*emp.Joining
 	}
 
+	fmt.Println(update)
+
 	if len(update)==0{
 		return errors.New("nothing to update")
 	}
 
-	_,err:=db.EmployeeCollection.UpdateOne(ctx,bson.M{"_id":id},bson.M{"$set":emp})
+	_,err:=db.EmployeeCollection.UpdateOne(ctx,bson.M{"_id":id},bson.M{"$set":update})
 	return err
 }
 
