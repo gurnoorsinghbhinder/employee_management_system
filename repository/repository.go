@@ -18,11 +18,29 @@ func CreateEmployee(emp models.Employee) error{
 	ctx,cancel:=utils.GetContext()
 	defer cancel()
 
-	if emp.Name==nil || emp.Email==nil{
-		return errors.New("name and email are required")
+	var validationError[] string
+
+	if emp.Name==nil || strings.TrimSpace(*emp.Name)==""{
+		validationError=append(validationError, "Name is required")
 	}
 
-	_,err:=db.EmployeeCollection.InsertOne(ctx,emp)
+	if emp.Email==nil || strings.TrimSpace(*emp.Email)==""{
+		validationError=append(validationError, "Email is required")
+	}
+
+	if emp.Position==nil {
+		validationError=append(validationError, "Position is required")
+	}
+
+	if emp.Salary==nil || *emp.Salary<0{
+		validationError=append(validationError,"Salary must be a positive number")
+	}
+
+	if len(validationError)>0{
+		return fmt.Errorf("validation failed: %v",validationError)
+	}
+
+    _,err:=db.EmployeeCollection.InsertOne(ctx,emp)
 	return err
 }
 
