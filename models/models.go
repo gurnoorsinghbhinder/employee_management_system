@@ -1,8 +1,9 @@
 package models
 
 import (
+	"employee/utils"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type PreviousOrgs struct{
@@ -16,6 +17,6 @@ type Employee struct{
 	Email *string `bson:"email,omitempty" json:"email,omitempty"`
 	Position *string `bson:"position,omitempty" json:"position,omitempty"`
 	Salary *float64 `bson:"salary,omitempty" json:"salary,omitempty"`
-	Joining *time.Time `bson:"joining,omitempty" json:"joining,omitempty"`
+	Joining *utils.CustomTime `bson:"joining,omitempty" json:"joining,omitempty"`
 	PreviousOrgs *[]PreviousOrgs `bson:"previousOrgs,omitempty" json:"previousOrgs,omitempty"`
 }

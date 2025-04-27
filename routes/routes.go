@@ -2,18 +2,26 @@ package routes
 
 import (
 	"employee/controller"
+	"employee/repository"
 
 	"github.com/gorilla/mux"
 )
 
 func RegisterRoutes() *mux.Router{
-	r:=mux.NewRouter()
-	r.HandleFunc("/employees",controller.CreateEmployee).Methods("POST")
-	r.HandleFunc("/employees",controller.GetAllEmployee).Methods("GET")
-	r.HandleFunc("/employees",controller.DeleteAllEmployees).Methods("DELETE")
-	r.HandleFunc("/employees/{id}",controller.DeleteEmployee).Methods("DELETE")
-	r.HandleFunc("/employees/{id}",controller.UpdateEmployee).Methods("PUT")
-	r.HandleFunc("/employees/{id}",controller.GetEmployeeByID).Methods("GET")
-	r.HandleFunc("/employees/paginated",controller.GetPaginatedEmployees).Methods("GET")
-	return r
+	
+	repo := repository.NewEmployeeRepository()
+	controller := controller.NewEmployeeController(repo)
+
+	router := mux.NewRouter()
+
+	router.HandleFunc("/employees", controller.CreateEmployee).Methods("POST")
+	router.HandleFunc("/employees", controller.GetAllEmployee).Methods("GET")
+	router.HandleFunc("/employees/{id}", controller.UpdateEmployee).Methods("PUT")
+	router.HandleFunc("/employees/{id}", controller.DeleteEmployee).Methods("DELETE")
+	router.HandleFunc("/employees", controller.DeleteAllEmployees).Methods("DELETE")
+	router.HandleFunc("/employees/{id}", controller.GetEmployeeByID).Methods("GET")
+	router.HandleFunc("/employees/paginated", controller.GetPaginatedEmployees).Methods("GET")
+	return router
 }
+
+

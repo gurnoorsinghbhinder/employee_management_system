@@ -5,180 +5,141 @@ import (
 	"employee/models"
 	"employee/utils"
 	"errors"
-	"fmt"
-	"strings"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Creates a new employee in the database
-func CreateEmployee(emp models.Employee) error{
-	ctx,cancel:=utils.GetContext()
+
+type EmployeeRepository interface {
+	CreateEmployee(employee models.Employee) error
+	IsEmailTaken(email string) (bool, error)
+	IsEmailTakenByOther(id primitive.ObjectID, email string) (bool, error)
+	GetAllEmployees() ([]models.Employee, error)
+	UpdateEmployees(id primitive.ObjectID, update bson.M) error
+	DeleteEmployee(id primitive.ObjectID) error
+	DeleteAllEmployees() error
+	GetEmployeeByID(id primitive.ObjectID) (models.Employee, error)
+	GetPaginatedEmployees(page int, limit int) ([]models.Employee, error)
+}
+
+
+type employeeRepository struct {}
+
+func NewEmployeeRepository() EmployeeRepository {
+	return &employeeRepository{}
+}
+
+// Now attach all methods to *employeeRepository
+
+func (r *employeeRepository) CreateEmployee(emp models.Employee) error {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	var validationError[] string
-
-	if emp.Name==nil || strings.TrimSpace(*emp.Name)==""{
-		validationError=append(validationError, "Name is required")
-	}
-
-	if emp.Email==nil || strings.TrimSpace(*emp.Email)==""{
-		validationError=append(validationError, "Email is required")
-	}
-
-	if emp.Position==nil {
-		validationError=append(validationError, "Position is required")
-	}
-
-	if emp.Salary==nil || *emp.Salary<0{
-		validationError=append(validationError,"Salary must be a positive number")
-	}
-
-	if len(validationError)>0{
-		return fmt.Errorf("validation failed: %v",validationError)
-	}
-
-    _,err:=db.EmployeeCollection.InsertOne(ctx,emp)
+	_, err := db.EmployeeCollection.InsertOne(ctx, emp)
 	return err
 }
 
-// Retrieves all employees
-func GetAllEmployees()([]models.Employee,error){
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) GetAllEmployees() ([]models.Employee, error) {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
-	
+
 	var allEmployees []models.Employee
-	cursor,err:=db.EmployeeCollection.Find(ctx,bson.M{})
-	if err!=nil{
-		return nil,err
+	cursor, err := db.EmployeeCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	for cursor.Next(ctx){
+	for cursor.Next(ctx) {
 		var employee models.Employee
-		if err:=cursor.Decode(&employee);err!=nil{
-			return nil,err
+		if err := cursor.Decode(&employee); err != nil {
+			return nil, err
 		}
-		allEmployees=append(allEmployees, employee)
+		allEmployees = append(allEmployees, employee)
 	}
-	return allEmployees,nil
+	return allEmployees, nil
 }
 
-// Updates an employee by ID
-func UpdateEmployees(id primitive.ObjectID,emp models.Employee) error {
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) UpdateEmployees(id primitive.ObjectID, update bson.M) error {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	update:=bson.M{}
-	
-	if emp.Name!=nil && strings.TrimSpace(*emp.Name)!=""{
-		update["name"]=*emp.Name
-	}
-	
-	if emp.Email!=nil && strings.TrimSpace(*emp.Email)!=""{
-		update["email"]=*emp.Email
-	}
-
-	if emp.Position!=nil && strings.TrimSpace(*emp.Position)!=""{
-		update["position"]=*emp.Position
-	}
-
-	if emp.Salary!=nil {
-		update["salary"]=*emp.Salary
-	}
-
-	if emp.Joining!=nil {
-		update["joining"]= *emp.Joining
-	}
-
-	if emp.PreviousOrgs!=nil {
-		update["previousOrgs"]=*emp.Joining
-	}
-
-	fmt.Println(update)
-
-	if len(update)==0{
+	if len(update) == 0 {
 		return errors.New("nothing to update")
 	}
 
-	_,err:=db.EmployeeCollection.UpdateOne(ctx,bson.M{"_id":id},bson.M{"$set":update})
+	_, err := db.EmployeeCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": update})
 	return err
 }
 
-// Deletes an employee by ID
-func DeleteEmployee(id primitive.ObjectID) error {
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) DeleteEmployee(id primitive.ObjectID) error {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	_,err:=db.EmployeeCollection.DeleteOne(ctx,bson.M{"_id":id})
+	_, err := db.EmployeeCollection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
 
-// Deletes all employees
-func DeleteAllEmployees()error{
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) DeleteAllEmployees() error {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	_,err:=db.EmployeeCollection.DeleteMany(ctx,bson.M{})
+	_, err := db.EmployeeCollection.DeleteMany(ctx, bson.M{})
 	return err
 }
 
-// Gets employee by ID
-func GetEmployeeByID(id primitive.ObjectID)(models.Employee,error){
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) GetEmployeeByID(id primitive.ObjectID) (models.Employee, error) {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
 	var employee models.Employee
-	err:=db.EmployeeCollection.FindOne(ctx,bson.M{"_id":id}).Decode(&employee)
-	return employee,err
+	err := db.EmployeeCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&employee)
+	return employee, err
 }
 
-// Retrieves employees with pagination
-func GetPaginatedEmployees(page,limit int)([]models.Employee,error){
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) GetPaginatedEmployees(page, limit int) ([]models.Employee, error) {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	skip:=(page-1)*limit
-	opts:=options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	skip := (page - 1) * limit
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
 
-	cursor,err:=db.EmployeeCollection.Find(ctx,bson.M{},opts)
-	if err!=nil{
-		return nil,err
+	cursor, err := db.EmployeeCollection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, err
 	}
-	
+
 	var employees []models.Employee
-	if err:=cursor.All(ctx,&employees);err!=nil{
-		return nil,err
+	if err := cursor.All(ctx, &employees); err != nil {
+		return nil, err
 	}
-	return employees,nil
+	return employees, nil
 }
 
-// Checks if email already exists
-func IsEmailTaken(email string)(bool,error){
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) IsEmailTaken(email string) (bool, error) {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	count,err:=db.EmployeeCollection.CountDocuments(ctx,bson.M{"email":email})
-	if err!=nil{
-		return false,err
+	count, err := db.EmployeeCollection.CountDocuments(ctx, bson.M{"email": email})
+	if err != nil {
+		return false, err
 	}
-	return count>0,nil
+	return count > 0, nil
 }
 
-func IsEmailTakenByOther(id primitive.ObjectID,email string)(bool,error){
-	ctx,cancel:=utils.GetContext()
+func (r *employeeRepository) IsEmailTakenByOther(id primitive.ObjectID, email string) (bool, error) {
+	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	filter:=bson.M{
-		"email":email,
-		"_id":bson.M{"$ne":id},
+	filter := bson.M{
+		"email": email,
+		"_id":   bson.M{"$ne": id},
 	}
 
-	count,err:=db.EmployeeCollection.CountDocuments(ctx,filter)
-	if err!=nil{
-		return false,err
+	count, err := db.EmployeeCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, err
 	}
-	return count>0,nil
+	return count > 0, nil
 }
