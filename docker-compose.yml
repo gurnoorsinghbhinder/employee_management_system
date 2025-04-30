@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ems-app
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - PORT=8080
+      - DATABASE_NAME=${DATABASE_NAME}
+      - COLLECTION_NAME=${COLLECTION_NAME}
+    restart: unless-stopped
+    networks:
+      - ems-network
+
+networks:
+  ems-network:
+    driver: bridge

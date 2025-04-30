@@ -19,7 +19,7 @@ var EmployeeCollection *mongo.Collection
 
 // ConnectDB establishes a connection to MongoDB
 func ConnectDB(){
-	ctx,cancel:=context.WithTimeout(context.Background(),2*time.Second)
+	ctx,cancel:=context.WithTimeout(context.Background(),10*time.Second)
 	defer cancel()
 	
 	err:=godotenv.Load()
@@ -31,6 +31,7 @@ func ConnectDB(){
 	if mongoURI==""{
 		log.Fatal("no mongoURI available!")
 	}
+	log.Printf("Attempting to connect to MongoDB with URI: %s", mongoURI)
 
 	clientOptions:=options.Client().ApplyURI(mongoURI)
 
@@ -41,10 +42,10 @@ func ConnectDB(){
 
 	err=client.Ping(ctx,readpref.Primary())
 	if err!=nil{
-		log.Fatal("Attempt to connected but ping failed")
+		log.Fatalf("Attempt to connected but ping failed: %v",err)
 	}
 
-	DB=client.Database("employee_db")
-	EmployeeCollection=DB.Collection("employee_collection")
+	DB=client.Database(os.Getenv("DATABASE_NAME"))
+	EmployeeCollection=DB.Collection(os.Getenv("COLLECTION_NAME"))
 	log.Println("Connected to mongodb",EmployeeCollection.Name())
 }
