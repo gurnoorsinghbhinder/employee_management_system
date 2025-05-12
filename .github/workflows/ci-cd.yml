@@ -41,3 +41,9 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/employee-management-app:latest
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            DATABASE_NAME=${{ secrets.DATABASE_NAME }}
+            COLLECTION_NAME=${{ secrets.COLLECTION_NAME }}
+            PORT=8080
+            DOCKER_BUILDKIT=1

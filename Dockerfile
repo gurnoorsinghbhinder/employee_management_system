@@ -8,7 +8,6 @@ ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY .env /app/.env
 
 # Accepting build arguments
 ARG MONGO_URI
