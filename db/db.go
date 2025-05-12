@@ -31,7 +31,7 @@ func ConnectDB(){
 	if mongoURI==""{
 		log.Fatal("no mongoURI available!")
 	}
-	log.Printf("Attempting to connect to MongoDB with URI: %s", mongoURI)
+	//log.Print("Attempting to connect to MongoDB with URI")
 
 	clientOptions:=options.Client().ApplyURI(mongoURI)
 
