@@ -8,7 +8,19 @@ ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+COPY .env /app/.env
 
+# Accepting build arguments
+ARG MONGO_URI
+ARG DATABASE_NAME
+ARG COLLECTION_NAME
+
+# Use build arguments
+ENV MONGO_URI=${MONGO_URI}
+ENV DATABASE_NAME=${DATABASE_NAME}
+ENV COLLECTION_NAME=${COLLECTION_NAME}
+
+# Build the Go app
 RUN go build -o employee-management-app ./main.go
 
 #final stage
