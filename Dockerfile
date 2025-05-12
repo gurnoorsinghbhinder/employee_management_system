@@ -25,7 +25,6 @@ RUN go build -o employee-management-app ./main.go
 #final stage
 FROM alpine:3.21
 COPY --from=builder /app/employee-management-app /app/employee-management-app
-COPY --from=builder /app/.env /app/.env
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 #set docker env flag
