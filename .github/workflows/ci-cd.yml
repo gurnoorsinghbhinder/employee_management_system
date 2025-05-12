@@ -1,14 +1,13 @@
-name: CI/CD Pipeline 
-on: 
+name: CI/CD Pipeline
+on:
   push:
     branches:
-      - main 
+      - main
       - backend-ems
-    pull_request:
-      
+  pull_request:
 
 jobs:
-  build: 
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,27 +16,27 @@ jobs:
       - name: Set up GO
         uses: actions/setup-go@v2
         with:
-          go-version: '1.24' 
+          go-version: '1.24'
 
-      - name: Installing dependencies 
+      - name: Installing dependencies
         run: go mod tidy
 
       - name: Run tests
         run: go test ./... -v
 
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
       - name: Build docker image
-        run: docker build --build-arg MONGO_URI=${{ secrets.MONGO_URI }} \
-                          --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
-                          --build-arg COLLECTION_NAME=${{ secrets.COLLECTION_NAME }} \
-                          -t employee-management-app:latest .
+        run: |
+          docker build \
+            --build-arg MONGO_URI=${{ secrets.MONGO_URI }} \
+            --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+            --build-arg COLLECTION_NAME=${{ secrets.COLLECTION_NAME }} \
+            -t employee-management-app:latest .
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push docker image
         run: docker push gurnoorbhinder/employee-management-app:latest
-
-
