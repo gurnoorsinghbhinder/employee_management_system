@@ -18,6 +18,11 @@ var DB *mongo.Database
 // EmployeeCollection is the MongoDB collection for employees
 var EmployeeCollection *mongo.Collection
 
+func InitDB()error{
+	ConnectDB()
+	return nil
+}
+
 // ConnectDB establishes a connection to MongoDB
 func ConnectDB(){
 	ctx,cancel:=context.WithTimeout(context.Background(),10*time.Second)

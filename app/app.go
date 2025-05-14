@@ -6,27 +6,34 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/dig"
 )
 
 func Start(){
-	// Initialize the database connection
-	db.ConnectDB()
+	container:=dig.New()
 
-	// Initialize the router and register routes
-	r:=routes.RegisterRoutes()
+	//connect db
+	container.Provide(db.InitDB)
 
-	// Check if running in Docker
-	dockerEnv:=os.Getenv("DOCKER_ENV")
-    if dockerEnv=="true"{
-	   log.Println("Docker environment detected")
-      } else{
-    	log.Println("Not running in Docker")
-     }
+	//Initialized routes 
+	container.Provide(routes.RegisterRoutes)
 
-	log.Println("Server running on port 8080...")
-    log.Fatal(http.ListenAndServe(":8080",r))
 	
 
-
-
+	// Check if running in Docker
+   err := container.Invoke(func( r *mux.Router) {
+    dockerEnv := os.Getenv("DOCKER_ENV")
+    if dockerEnv == "true" {
+        log.Println("Docker environment detected")
+    } else {
+        log.Println("Not running in Docker")
+    }
+    log.Println("Server running on port 8080...")
+    log.Fatal(http.ListenAndServe(":8080", r))
+})
+    if err != nil {
+        log.Fatalf("Failed to start: %v", err)
+    }		
 }
