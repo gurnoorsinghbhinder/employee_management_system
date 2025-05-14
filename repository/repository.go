@@ -21,6 +21,8 @@ type EmployeeRepository interface {
 	DeleteAllEmployees() error
 	GetEmployeeByID(id primitive.ObjectID) (models.Employee, error)
 	GetPaginatedEmployees(page int, limit int) ([]models.Employee, error)
+	SearchEmployees(query string) ([]models.Employee, error)
+	CreateEmployeesBulk(employees []models.Employee) error
 }
 
 
@@ -143,3 +145,45 @@ func (r *employeeRepository) IsEmailTakenByOther(id primitive.ObjectID, email st
 	}
 	return count > 0, nil
 }
+
+func (r *employeeRepository) SearchEmployees(query string)([]models.Employee,error){
+   ctx,cancel:=utils.GetContext()
+   defer cancel()
+
+   filter:=bson.M{
+	"$text":bson.M{"$search":query},
+   }
+   
+   cursor,err:=db.EmployeeCollection.Find(ctx,filter)
+   if err!=nil{
+	return nil,err
+   }
+   defer cursor.Close(ctx)
+
+   var employees []models.Employee
+   for cursor.Next(ctx){
+	var employee models.Employee
+	if err:=cursor.Decode(&employee);err!=nil{
+		return nil,err
+	}
+	employees=append(employees, employee)
+   }
+   return employees,nil
+
+
+
+}
+
+func (r *employeeRepository) CreateEmployeesBulk(employees []models.Employee) error {
+    ctx, cancel := utils.GetContext()
+    defer cancel()
+
+    var docs []interface{}
+    for _, emp := range employees {
+        docs = append(docs, emp)
+    }
+
+    _, err := db.EmployeeCollection.InsertMany(ctx, docs)
+    return err
+}
+

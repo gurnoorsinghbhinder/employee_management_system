@@ -16,11 +16,14 @@ func RegisterRoutes() *mux.Router{
 
 	router.HandleFunc("/employees", controller.CreateEmployee).Methods("POST")
 	router.HandleFunc("/employees", controller.GetAllEmployee).Methods("GET")
+	router.HandleFunc("/employees/search", controller.SearchEmployees).Methods("GET")
 	router.HandleFunc("/employees/{id}", controller.UpdateEmployee).Methods("PUT")
 	router.HandleFunc("/employees/{id}", controller.DeleteEmployee).Methods("DELETE")
 	router.HandleFunc("/employees", controller.DeleteAllEmployees).Methods("DELETE")
 	router.HandleFunc("/employees/{id}", controller.GetEmployeeByID).Methods("GET")
-	router.HandleFunc("/employees/paginated", controller.GetPaginatedEmployees).Methods("GET")
+	router.HandleFunc("/paginated", controller.GetPaginatedEmployees).Methods("GET")
+	router.HandleFunc("/employees/bulk", controller.CreateEmployeesBulk).Methods("POST")
+	
 	return router
 }
 

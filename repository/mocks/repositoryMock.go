@@ -13,6 +13,16 @@ type EmployeeRepositoryMock struct {
 	mock.Mock
 }
 
+func (m *EmployeeRepositoryMock) CreateEmployeesBulk(employees []models.Employee) error {
+    args := m.Called(employees)
+    return args.Error(0)
+}
+
+func (m *EmployeeRepositoryMock) SearchEmployees(query string) ([]models.Employee, error) {
+    args := m.Called(query)
+    return args.Get(0).([]models.Employee), args.Error(1)
+}
+
 func (m *EmployeeRepositoryMock) CreateEmployee(emp models.Employee) error {
 	args := m.Called(emp)
 	return args.Error(0)

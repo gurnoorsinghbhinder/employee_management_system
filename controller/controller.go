@@ -221,3 +221,36 @@ func (ec *EmployeeController) GetPaginatedEmployees(w http.ResponseWriter, r *ht
 	}
 	json.NewEncoder(w).Encode(employees)
 }
+
+func (ec *EmployeeController)SearchEmployees(w http.ResponseWriter,r *http.Request){
+	w.Header().Set("Content-Type","application/json")
+	query:=r.URL.Query().Get("q")
+	if query==""{
+		http.Error(w,"missing search query",http.StatusBadRequest)
+		return 
+	}
+	employees,err:=ec.Repo.SearchEmployees(query)
+	if err!=nil{
+		http.Error(w,err.Error(),http.StatusInternalServerError)
+		return 
+	}
+	json.NewEncoder(w).Encode(employees)
+
+}
+
+// CreateEmployeesBulk handles POST requests to create multiple employees at once.
+func (ec *EmployeeController) CreateEmployeesBulk(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    var employees []models.Employee
+    if err := json.NewDecoder(r.Body).Decode(&employees); err != nil {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
+
+    if err := ec.Repo.CreateEmployeesBulk(employees); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Employees created successfully"})
+}
